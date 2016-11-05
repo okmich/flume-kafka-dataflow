@@ -1,0 +1,42 @@
+##To begin unzip all the zip files in the current directory.
+
+##then create the hdfs location for the final output
+hdfs dfs -mkdir -p /user/hduser/rawdata/flume/trade_data
+
+##
+#to run the server flume agent 
+#start up the flume agent with an avro source
+flume-ng agent --classpath ./custom-flume-client/target/custom-flume-client-1.0-SNAPSHOT.jar --name main --conf-file main.propertiesconf-file main.properties
+
+#to run the first client agent with avro sink
+flume-ng agent --name client1 --conf-file client1.properties
+
+#to run the second client agent with avro sink
+flume-ng agent --name client2 --conf-file client2.properties
+
+#to run the third client agent with avro sink
+flume-ng agent --name client3 --conf-file client3.properties
+
+#to start up zookeeper in single instance single node mode
+zookeeper-server-start.sh $ZOOKEEPER_HOME/conf/zoo.cfg
+
+#to start up kafka server on the single instance single node zookeeper
+kafka-server-start.sh $KAFKA_HOME/config/server.properties
+
+#create a topic using the command
+kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic trade_exec_topic
+
+#list the topics in kafka
+kafka-topics.sh --list --zookeeper localhost:2181
+
+#start a console kafka consumer
+kafka-console-consumer.sh --zookeeper localhost:2181 --topic  trade_exec_topic
+
+## use this command to copy the data file into this all spooldir in one swoop
+cp ./DAT_ASCII_USDJPY_T_201601.csv ./client1-dir/ && cp ./DAT_ASCII_EURGBP_T_201601.csv ./client2-dir/ && cp ./DAT_ASCII_AUDNZD_T_201601.csv ./client3-dir/
+
+## use this command to copy the flume edited data file into this all spooldir in one swoop
+rm ./client1-dir/DAT_ASCII_USDJPY_T_201601.csv.COMPLETED && rm ./client2-dir/DAT_ASCII_EURGBP_T_201601.csv.COMPLETED && rm ./client3-dir/DAT_ASCII_AUDNZD_T_201601.csv.COMPLETED
+
+## in case you want to reset and clear the hdfs dir
+hdfs dfs -rm -r /user/hduser/rawdata/flume/trade_data && hdfs dfs -mkdir /user/hduser/rawdata/flume/trade_data
